@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.sqltuning.mapper.ActorMapper">
+
+    <resultMap id="ActorResultMap" type="com.example.sqltuning.entity.Actor">
+        <id property="actorId" column="actor_id"/>
+        <result property="firstName" column="first_name"/>
+        <result property="lastName" column="last_name"/>
+        <result property="lastUpdate" column="last_update"/>
+    </resultMap>
+
+    <select id="findAllActors" resultMap="ActorResultMap">
+        SELECT actor_id, first_name, last_name, last_update
+        FROM actor
+        ORDER BY actor_id
+    </select>
+
+    <select id="findActorsByName" resultMap="ActorResultMap">
+        SELECT actor_id, first_name, last_name, last_update
+        FROM actor
+        WHERE first_name LIKE CONCAT(#{name}, '%')
+           OR last_name LIKE CONCAT(#{name}, '%')
+        ORDER BY last_name, first_name
+    </select>
+
+    <select id="findActorById" resultMap="ActorResultMap">
+        SELECT actor_id, first_name, last_name, last_update
+        FROM actor
+        WHERE actor_id = #{actorId}
+    </select>
+
+</mapper>

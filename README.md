@@ -1,2 +1,523 @@
-# db-performance-tuning
-SQLパーフォーマンスチューニングのデモ環境
+# SQLパフォーマンスチューニング デモアプリケーション
+
+## 📝 概要
+
+このプロジェクトは、**SQLパフォーマンスチューニング**の講義で使用するデモアプリケーションです。
+MySQLのサンプルデータベース「Sakila」を使用して、以下のパフォーマンスチューニング技術を実践的に学習できます。
+
+### 学習できる内容
+
+1. **インデックスの重要性**
+   - インデックスありとなしの性能差
+   - 前方一致、中間一致、後方一致の違い
+   - 複合インデックスの効果
+
+2. **JOINの最適化**
+   - N+1問題とその解決方法
+   - 適切なJOINの使い方
+   - 過度なJOINの削減
+
+3. **サブクエリの最適化**
+   - 相関サブクエリの問題点
+   - JOINへの書き換え
+   - EXISTS vs IN の使い分け
+
+4. **その他のベストプラクティス**
+   - SELECT * を避ける理由
+   - 必要最小限のデータ取得
+   - クエリ実行計画の読み方
+
+---
+
+## 🏗️ アーキテクチャ
+
+### 技術スタック
+
+**バックエンド:**
+- Java 17
+- Spring Boot 3.2.0
+- Spring Security + JWT認証
+- MyBatis 3.0.3
+- MySQL 8.0
+
+**フロントエンド:**
+- React 18.2.0
+- React Router 6.20.0
+- Axios 1.6.2
+
+**インフラ:**
+- Docker & Docker Compose
+
+### プロジェクト構成
+
+```
+db-performance-tuning/
+├── backend/                          # Spring Bootバックエンド
+│   ├── src/main/java/com/example/sqltuning/
+│   │   ├── config/                  # 設定クラス
+│   │   ├── controller/              # RESTコントローラー
+│   │   ├── dto/                     # データ転送オブジェクト
+│   │   ├── entity/                  # エンティティクラス
+│   │   ├── mapper/                  # MyBatisマッパーインターフェース
+│   │   ├── security/                # セキュリティ設定
+│   │   └── service/                 # ビジネスロジック
+│   ├── src/main/resources/
+│   │   ├── mapper/                  # MyBatis XMLマッパー
+│   │   └── application.yml          # アプリケーション設定
+│   └── pom.xml                      # Maven設定
+│
+├── frontend/                        # Reactフロントエンド
+│   ├── public/
+│   ├── src/
+│   │   ├── components/              # Reactコンポーネント
+│   │   └── services/                # API通信サービス
+│   └── package.json
+│
+├── database/                        # データベース関連
+│   └── scripts/
+│       ├── 01-init-sakila.sql      # Sakilaデータベース初期化
+│       ├── 02-create-indexes.sql   # インデックス作成
+│       └── 03-demo-queries.sql     # デモ用クエリ集
+│
+├── docker-compose.yml               # Docker Compose設定
+└── README.md                        # このファイル
+```
+
+---
+
+## 🚀 セットアップ手順
+
+### 前提条件
+
+以下のソフトウェアがインストールされていることを確認してください：
+
+- Docker Desktop (最新版)
+- Java 17以上
+- Maven 3.6以上
+- Node.js 16以上
+- npm または yarn
+
+### 1. リポジトリのクローン
+
+```bash
+git clone <repository-url>
+cd db-performance-tuning
+```
+
+### 2. MySQLデータベースの起動（Docker）
+
+```bash
+# Docker Composeでデータベースを起動
+docker-compose up -d
+
+# ログを確認（初期化が完了するまで待つ）
+docker-compose logs -f mysql
+
+# データベースが起動したことを確認
+docker ps
+```
+
+**注意:** 初回起動時は、Sakilaデータベースの初期化に数分かかる場合があります。
+`database/scripts/` 内のSQLスクリプトが自動的に実行されます。
+
+### 3. データベース接続の確認
+
+```bash
+# MySQLコンテナに接続
+docker exec -it sql-tuning-mysql mysql -uroot -ppassword
+
+# データベースとテーブルの確認
+mysql> USE sakila;
+mysql> SHOW TABLES;
+mysql> SELECT COUNT(*) FROM film;  -- 1000件のデータがあることを確認
+mysql> SELECT COUNT(*) FROM actor; -- 200件のデータがあることを確認
+mysql> exit
+```
+
+### 4. バックエンド（Spring Boot）の起動
+
+```bash
+# backendディレクトリに移動
+cd backend
+
+# Mavenでビルドと起動
+mvn clean install
+mvn spring-boot:run
+
+# または、JARファイルを生成して実行
+mvn clean package
+java -jar target/sql-tuning-demo-1.0.0.jar
+```
+
+**確認:** ブラウザで `http://localhost:8080/api/auth/test` にアクセスして、
+「認証APIは正常に動作しています」と表示されることを確認。
+
+### 5. フロントエンド（React）の起動
+
+別のターミナルウィンドウで：
+
+```bash
+# frontendディレクトリに移動
+cd frontend
+
+# 依存関係をインストール
+npm install
+
+# 開発サーバーを起動
+npm start
+```
+
+**確認:** ブラウザが自動的に開き、`http://localhost:3000` でログイン画面が表示されます。
+
+---
+
+## 🎮 使い方
+
+### ログイン
+
+デモ用のアカウントでログインします：
+
+- **ユーザー名:** `demo`
+- **パスワード:** `password`
+
+または
+
+- **ユーザー名:** `admin`
+- **パスワード:** `password`
+
+### デモの実行
+
+ログイン後、ダッシュボードが表示されます。以下のデモを実行できます：
+
+#### デモ1: インデックスの重要性
+
+1. 検索ボックスに「ACADEMY」と入力
+2. 「タイトル検索（遅い）」ボタンをクリック → 実行時間を確認
+3. 「タイトル検索（速い）」ボタンをクリック → 実行時間を確認
+4. 実行時間の差を比較
+
+**解説:**
+- 遅いクエリ: `LIKE '%keyword%'` を使用（インデックスを使えない）
+- 速いクエリ: `LIKE 'keyword%'` を使用（インデックスを活用）
+
+#### デモ2: JOINの最適化（N+1問題）
+
+1. 「言語情報付き取得（遅い）」ボタンをクリック
+2. 「言語情報付き取得（速い）」ボタンをクリック
+3. 実行時間の差を比較
+
+**解説:**
+- 遅いバージョン: N+1問題（複数回のクエリ実行を想定）
+- 速いバージョン: JOINを使って1回のクエリで取得
+
+#### デモ3: サブクエリの最適化
+
+1. 「複雑な検索（遅い）」ボタンをクリック
+2. 「複雑な検索（速い）」ボタンをクリック
+3. 実行時間の差を比較
+
+**解説:**
+- 遅いバージョン: 相関サブクエリを多用
+- 速いバージョン: JOINとGROUP BYで最適化
+
+#### デモ4: 過度なJOINの削減
+
+「顧客（Customers）」タブに切り替えて：
+
+1. 「顧客取得（遅い）」ボタンをクリック
+2. 「顧客取得（速い）」ボタンをクリック
+3. 実行時間の差を比較
+
+**解説:**
+- 遅いバージョン: 4つのテーブルをJOIN（address, city, country）
+- 速いバージョン: 必要最小限の情報のみ取得
+
+---
+
+## 📊 MyBatisの活用方法
+
+このプロジェクトでは、MyBatisを使用してSQLマッピングを行っています。
+
+### MyBatisマッパーの構成
+
+#### 1. マッパーインターフェース
+
+`backend/src/main/java/com/example/sqltuning/mapper/FilmMapper.java`
+
+```java
+@Mapper
+public interface FilmMapper {
+    List<Film> findFilmsByTitleSlow(@Param("title") String title);
+    List<Film> findFilmsByTitleFast(@Param("title") String title);
+}
+```
+
+#### 2. XMLマッパー
+
+`backend/src/main/resources/mapper/FilmMapper.xml`
+
+```xml
+<mapper namespace="com.example.sqltuning.mapper.FilmMapper">
+    <!-- 遅いクエリ -->
+    <select id="findFilmsByTitleSlow" resultMap="FilmResultMap">
+        SELECT * FROM film
+        WHERE title LIKE CONCAT('%', #{title}, '%')
+    </select>
+
+    <!-- 速いクエリ -->
+    <select id="findFilmsByTitleFast" resultMap="FilmResultMap">
+        SELECT * FROM film
+        WHERE title LIKE CONCAT(#{title}, '%')
+    </select>
+</mapper>
+```
+
+### MyBatisの設定
+
+`backend/src/main/resources/application.yml`
+
+```yaml
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.sqltuning.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+```
+
+**重要な設定:**
+- `map-underscore-to-camel-case: true` - snake_caseからcamelCaseへの自動変換
+- `log-impl` - SQLログの出力（デバッグ用）
+
+---
+
+## 🔍 パフォーマンス分析
+
+### 1. アプリケーションログの確認
+
+Spring Bootのコンソールログで、各クエリの実行時間が確認できます：
+
+```
+2024-01-15 10:30:45 - searchFilmsByTitleSlow実行時間: 125ms, 取得件数: 10
+2024-01-15 10:30:50 - searchFilmsByTitleFast実行時間: 8ms, 取得件数: 10
+```
+
+### 2. MySQLでのクエリ実行計画確認
+
+```bash
+# MySQLに接続
+docker exec -it sql-tuning-mysql mysql -uroot -ppassword sakila
+
+# EXPLAIN で実行計画を確認
+mysql> EXPLAIN SELECT * FROM film WHERE title LIKE '%ACADEMY%';
+mysql> EXPLAIN SELECT * FROM film WHERE title LIKE 'ACADEMY%';
+```
+
+### 3. インデックスの作成とパフォーマンス比較
+
+```sql
+-- インデックスなしの状態でクエリを実行
+SELECT * FROM film WHERE title LIKE 'ACADEMY%';
+
+-- インデックスを作成
+CREATE INDEX idx_title ON film(title);
+
+-- 同じクエリを再実行して速度を比較
+SELECT * FROM film WHERE title LIKE 'ACADEMY%';
+
+-- 実行計画を確認
+EXPLAIN SELECT * FROM film WHERE title LIKE 'ACADEMY%';
+```
+
+---
+
+## 💡 講義での活用例
+
+### デモシナリオ例
+
+#### シナリオ1: インデックスの効果を実演
+
+1. まず、インデックスなしの状態で検索を実行
+2. 実行時間を記録（例: 120ms）
+3. `CREATE INDEX idx_title ON film(title);` を実行
+4. 同じ検索を再実行
+5. 実行時間を記録（例: 8ms）
+6. **約15倍の性能向上**を確認
+
+#### シナリオ2: EXPLAINの読み方
+
+```sql
+EXPLAIN SELECT * FROM film WHERE title LIKE '%ACADEMY%';
+```
+
+**結果の解説:**
+- `type: ALL` → フルテーブルスキャン（遅い）
+- `rows: 1000` → 1000行すべてをスキャン
+- `Extra: Using where` → WHERE句でフィルタリング
+
+```sql
+EXPLAIN SELECT * FROM film WHERE title LIKE 'ACADEMY%';
+```
+
+**インデックス作成後:**
+- `type: range` → インデックスレンジスキャン（速い）
+- `rows: 少数` → インデックスを使って絞り込み
+- `key: idx_title` → 使用されたインデックス
+
+#### シナリオ3: リアルタイムパフォーマンス測定
+
+Webアプリケーションを使って、受講者に実際に操作してもらい、
+実行時間の違いを体感してもらいます。
+
+---
+
+## 🛠️ トラブルシューティング
+
+### データベースに接続できない
+
+```bash
+# MySQLコンテナの状態を確認
+docker ps
+
+# ログを確認
+docker-compose logs mysql
+
+# コンテナを再起動
+docker-compose restart mysql
+```
+
+### Spring Bootが起動しない
+
+**エラー:** `Communications link failure`
+
+**解決方法:** MySQLが完全に起動するまで待ってから、Spring Bootを起動してください。
+
+```bash
+# MySQLが起動していることを確認
+docker exec -it sql-tuning-mysql mysqladmin ping -ppassword
+```
+
+### フロントエンドでAPI接続エラー
+
+**エラー:** `Network Error` または `CORS Error`
+
+**確認事項:**
+1. バックエンドが起動しているか（`http://localhost:8080/api/auth/test`）
+2. CORS設定が正しいか（`SecurityConfig.java`）
+3. ブラウザのコンソールでエラーメッセージを確認
+
+### ログインできない
+
+**問題:** ユーザー名とパスワードが正しいのにログインできない
+
+**確認:**
+```sql
+-- usersテーブルの確認
+SELECT * FROM sakila.users;
+```
+
+**解決:** 初期データが投入されていない場合、手動でユーザーを作成：
+
+```sql
+INSERT INTO sakila.users (username, password, role) VALUES
+('demo', '$2a$10$xCqWMw7IHqXaJJe5Y9Xz4.zJPLzJj5d7jR8D3k9cQN6J6k7g8h9i0', 'USER');
+```
+
+---
+
+## 📚 参考資料
+
+### データベース関連
+- [MySQL公式ドキュメント - EXPLAIN](https://dev.mysql.com/doc/refman/8.0/en/explain.html)
+- [MySQL公式ドキュメント - インデックスの最適化](https://dev.mysql.com/doc/refman/8.0/en/optimization-indexes.html)
+- [Sakila サンプルデータベース](https://dev.mysql.com/doc/sakila/en/)
+
+### MyBatis関連
+- [MyBatis 公式ドキュメント](https://mybatis.org/mybatis-3/)
+- [MyBatis Spring Boot Starter](https://mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/)
+
+### Spring Boot関連
+- [Spring Boot 公式ドキュメント](https://spring.io/projects/spring-boot)
+- [Spring Security 公式ドキュメント](https://spring.io/projects/spring-security)
+
+---
+
+## 🔧 開発者向け情報
+
+### APIエンドポイント
+
+#### 認証
+- `POST /api/auth/login` - ログイン
+- `GET /api/auth/test` - 接続テスト
+
+#### 映画
+- `GET /api/films` - 全映画取得
+- `GET /api/films/search/slow?title={title}` - タイトル検索（遅い）
+- `GET /api/films/search/fast?title={title}` - タイトル検索（速い）
+- `GET /api/films/with-language/slow` - 言語情報付き（遅い）
+- `GET /api/films/with-language/fast` - 言語情報付き（速い）
+- `GET /api/films/complex/slow?minLength={length}` - 複雑な検索（遅い）
+- `GET /api/films/complex/fast?minLength={length}` - 複雑な検索（速い）
+
+#### 俳優
+- `GET /api/actors` - 全俳優取得
+- `GET /api/actors/search?name={name}` - 名前検索
+
+#### 顧客
+- `GET /api/customers/slow` - 全顧客取得（遅い）
+- `GET /api/customers/fast` - 全顧客取得（速い）
+
+### データベーススキーマ
+
+主要テーブル：
+- `film` - 映画（1000件）
+- `actor` - 俳優（200件）
+- `film_actor` - 映画と俳優の関連
+- `customer` - 顧客（599件）
+- `language` - 言語
+- `users` - ログインユーザー
+
+---
+
+## 📝 ライセンス
+
+このプロジェクトは教育目的で作成されています。
+
+---
+
+## 👥 貢献
+
+バグ報告や機能追加の提案は、GitHubのIssueでお願いします。
+
+---
+
+## 📞 サポート
+
+質問や問題がある場合は、以下の方法でサポートを受けられます：
+
+1. GitHub Issuesで質問を投稿
+2. プロジェクトのドキュメントを確認
+3. コードのコメントを参照
+
+---
+
+## 🎓 学習のヒント
+
+### 初心者向け
+1. まずは各デモを実行して、実行時間の違いを確認
+2. Spring BootのログでどのようなSQLが実行されているか確認
+3. `database/scripts/03-demo-queries.sql` のコメントを読む
+
+### 中級者向け
+1. MyBatisのXMLマッパーを読んで、SQLの違いを理解
+2. EXPLAINを使って実行計画を分析
+3. インデックスを追加/削除して効果を確認
+
+### 上級者向け
+1. より複雑なクエリを追加してパフォーマンスを測定
+2. プロファイリングツールを使って詳細分析
+3. 大量データでの性能テスト（データを10万件に増やすなど）
+
+---
+
+**Happy Learning! 🚀**

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.sqltuning.mapper.FilmMapper">
+
+    <!-- 基本的な結果マップ -->
+    <resultMap id="FilmResultMap" type="com.example.sqltuning.entity.Film">
+        <id property="filmId" column="film_id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="releaseYear" column="release_year"/>
+        <result property="languageId" column="language_id"/>
+        <result property="originalLanguageId" column="original_language_id"/>
+        <result property="rentalDuration" column="rental_duration"/>
+        <result property="rentalRate" column="rental_rate"/>
+        <result property="length" column="length"/>
+        <result property="replacementCost" column="replacement_cost"/>
+        <result property="rating" column="rating"/>
+        <result property="specialFeatures" column="special_features"/>
+        <result property="lastUpdate" column="last_update"/>
+    </resultMap>
+
+    <!-- 言語情報を含む結果マップ -->
+    <resultMap id="FilmWithLanguageResultMap" type="com.example.sqltuning.entity.Film" extends="FilmResultMap">
+        <result property="languageName" column="language_name"/>
+    </resultMap>
+
+    <!-- 全映画を取得 - SELECT * を使用（非推奨） -->
+    <select id="findAllFilms" resultMap="FilmResultMap">
+        SELECT * FROM film
+        ORDER BY film_id
+    </select>
+
+    <!--
+        【デモ1: インデックスなしの検索 - 遅い】
+        LIKE '%keyword%' はインデックスを使用できない
+        全件スキャンが発生する
+    -->
+    <select id="findFilmsByTitleSlow" resultMap="FilmResultMap">
+        SELECT
+            film_id, title, description, release_year, language_id,
+            original_language_id, rental_duration, rental_rate, length,
+            replacement_cost, rating, special_features, last_update
+        FROM film
+        WHERE title LIKE CONCAT('%', #{title}, '%')
+        ORDER BY title
+    </select>
+
+    <!--
+        【デモ1: インデックスを活用した検索 - 速い】
+        前方一致検索はインデックスを使用できる
+        idx_title インデックスが必要
+    -->
+    <select id="findFilmsByTitleFast" resultMap="FilmResultMap">
+        SELECT
+            film_id, title, description, release_year, language_id,
+            original_language_id, rental_duration, rental_rate, length,
+            replacement_cost, rating, special_features, last_update
+        FROM film
+        WHERE title LIKE CONCAT(#{title}, '%')
+        ORDER BY title
+    </select>
+
+    <!--
+        【デモ2: N+1問題 - 遅い】
+        各映画に対して言語情報を別々に取得する想定
+        実際にはアプリケーション側で複数回クエリを実行することになる
+    -->
+    <select id="findFilmsWithLanguageSlow" resultMap="FilmResultMap">
+        SELECT
+            film_id, title, description, release_year, language_id,
+            original_language_id, rental_duration, rental_rate, length,
+            replacement_cost, rating, special_features, last_update
+        FROM film
+        LIMIT 100
+    </select>
+
+    <!--
+        【デモ2: JOINを使用 - 速い】
+        1回のクエリで言語情報も取得
+    -->
+    <select id="findFilmsWithLanguageFast" resultMap="FilmWithLanguageResultMap">
+        SELECT
+            f.film_id, f.title, f.description, f.release_year, f.language_id,
+            f.original_language_id, f.rental_duration, f.rental_rate, f.length,
+            f.replacement_cost, f.rating, f.special_features, f.last_update,
+            l.name as language_name
+        FROM film f
+        INNER JOIN language l ON f.language_id = l.language_id
+        LIMIT 100
+    </select>
+
+    <!--
+        【デモ3: サブクエリ多用 - 遅い】
+        相関サブクエリは各行ごとに実行される
+    -->
+    <select id="findFilmsComplexSlow" resultMap="FilmWithLanguageResultMap">
+        SELECT
+            f.film_id, f.title, f.description, f.release_year, f.language_id,
+            f.original_language_id, f.rental_duration, f.rental_rate, f.length,
+            f.replacement_cost, f.rating, f.special_features, f.last_update,
+            (SELECT l.name FROM language l WHERE l.language_id = f.language_id) as language_name,
+            (SELECT COUNT(*) FROM film_actor fa WHERE fa.film_id = f.film_id) as actor_count
+        FROM film f
+        WHERE f.length >= #{minLength}
+        AND EXISTS (
+            SELECT 1 FROM film_actor fa2
+            WHERE fa2.film_id = f.film_id
+        )
+        ORDER BY f.title
+        LIMIT 50
+    </select>
+
+    <!--
+        【デモ3: JOIN使用で最適化 - 速い】
+        サブクエリをJOINに変換
+    -->
+    <select id="findFilmsComplexFast" resultMap="FilmWithLanguageResultMap">
+        SELECT
+            f.film_id, f.title, f.description, f.release_year, f.language_id,
+            f.original_language_id, f.rental_duration, f.rental_rate, f.length,
+            f.replacement_cost, f.rating, f.special_features, f.last_update,
+            l.name as language_name,
+            COUNT(DISTINCT fa.actor_id) as actor_count
+        FROM film f
+        INNER JOIN language l ON f.language_id = l.language_id
+        INNER JOIN film_actor fa ON f.film_id = fa.film_id
+        WHERE f.length >= #{minLength}
+        GROUP BY f.film_id, f.title, f.description, f.release_year, f.language_id,
+                 f.original_language_id, f.rental_duration, f.rental_rate, f.length,
+                 f.replacement_cost, f.rating, f.special_features, f.last_update,
+                 l.name
+        ORDER BY f.title
+        LIMIT 50
+    </select>
+
+    <!-- IDで映画を取得 -->
+    <select id="findFilmById" resultMap="FilmWithLanguageResultMap">
+        SELECT
+            f.film_id, f.title, f.description, f.release_year, f.language_id,
+            f.original_language_id, f.rental_duration, f.rental_rate, f.length,
+            f.replacement_cost, f.rating, f.special_features, f.last_update,
+            l.name as language_name
+        FROM film f
+        LEFT JOIN language l ON f.language_id = l.language_id
+        WHERE f.film_id = #{filmId}
+    </select>
+
+</mapper>
