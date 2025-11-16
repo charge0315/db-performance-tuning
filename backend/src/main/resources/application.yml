@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: sql-tuning-demo
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/sakila?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # MyBatis設定
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.sqltuning.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+    # SQLログを有効化（パフォーマンスチューニングのデモ用）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# サーバー設定
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# JWT設定
+jwt:
+  secret: mySecretKeyForJWTTokenGenerationAndValidation123456789
+  expiration: 86400000 # 24時間
+
+# ログ設定
+logging:
+  level:
+    com.example.sqltuning.mapper: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
