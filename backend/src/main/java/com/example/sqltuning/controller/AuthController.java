@@ -3,6 +3,7 @@ package com.example.sqltuning.controller;
 import com.example.sqltuning.dto.LoginRequest;
 import com.example.sqltuning.dto.LoginResponse;
 import com.example.sqltuning.security.JwtTokenProvider;
+import com.example.sqltuning.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
@@ -54,5 +56,26 @@ public class AuthController {
     @GetMapping("/test")
     public ResponseEntity<String> test() {
         return ResponseEntity.ok("認証APIは正常に動作しています");
+    }
+    
+    @GetMapping("/debug/{username}")
+    public ResponseEntity<?> debug(@PathVariable String username) {
+        try {
+            log.info("Debug: ユーザー名 '{}'でデバッグ試行", username);
+            
+            var user = userService.findByUsername(username);
+            if (user == null) {
+                return ResponseEntity.ok("User not found in database");
+            }
+            
+            return ResponseEntity.ok(String.format(
+                "User found - ID: %d, Username: %s, Role: %s, Password length: %d", 
+                user.getId(), user.getUsername(), user.getRole(), 
+                user.getPassword() != null ? user.getPassword().length() : 0
+            ));
+        } catch (Exception e) {
+            log.error("Debug エラー", e);
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
     }
 }

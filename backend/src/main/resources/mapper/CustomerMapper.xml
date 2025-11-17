@@ -6,11 +6,9 @@
 
     <resultMap id="CustomerResultMap" type="com.example.sqltuning.entity.Customer">
         <id property="customerId" column="customer_id"/>
-        <result property="storeId" column="store_id"/>
         <result property="firstName" column="first_name"/>
         <result property="lastName" column="last_name"/>
         <result property="email" column="email"/>
-        <result property="addressId" column="address_id"/>
         <result property="active" column="active"/>
         <result property="createDate" column="create_date"/>
         <result property="lastUpdate" column="last_update"/>
@@ -26,18 +24,12 @@
         【デモ4: 過度なJOIN - 遅い可能性】
         必要以上のJOINは性能を低下させる
     -->
-    <select id="findAllCustomersSlow" resultMap="CustomerWithAddressResultMap">
+    <select id="findAllCustomersSlow" resultMap="CustomerResultMap">
         SELECT
-            c.customer_id, c.store_id, c.first_name, c.last_name, c.email,
-            c.address_id, c.active, c.create_date, c.last_update,
-            a.address,
-            ci.city,
-            co.country
-        FROM customer c
-        LEFT JOIN address a ON c.address_id = a.address_id
-        LEFT JOIN city ci ON a.city_id = ci.city_id
-        LEFT JOIN country co ON ci.country_id = co.country_id
-        ORDER BY c.customer_id
+            customer_id, first_name, last_name, email,
+            active, create_date, last_update
+        FROM customer
+        ORDER BY customer_id
         LIMIT 100
     </select>
 
@@ -47,8 +39,8 @@
     -->
     <select id="findAllCustomersFast" resultMap="CustomerResultMap">
         SELECT
-            customer_id, store_id, first_name, last_name, email,
-            address_id, active, create_date, last_update
+            customer_id, first_name, last_name, email,
+            active, create_date, last_update
         FROM customer
         WHERE active = 1
         ORDER BY customer_id
@@ -57,8 +49,8 @@
 
     <select id="findCustomerByEmail" resultMap="CustomerResultMap">
         SELECT
-            customer_id, store_id, first_name, last_name, email,
-            address_id, active, create_date, last_update
+            customer_id, first_name, last_name, email,
+            active, create_date, last_update
         FROM customer
         WHERE email = #{email}
     </select>

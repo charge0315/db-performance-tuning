@@ -1,6 +1,8 @@
 spring:
   application:
     name: sql-tuning-demo
+  main:
+    allow-circular-references: true
 
   datasource:
     url: jdbc:mysql://localhost:3306/sakila?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
@@ -33,7 +35,7 @@ server:
 
 # JWT設定
 jwt:
-  secret: mySecretKeyForJWTTokenGenerationAndValidation123456789
+  secret: myVerySecureAndLongSecretKeyForJWTTokenGenerationAndValidation123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
   expiration: 86400000 # 24時間
 
 # ログ設定
