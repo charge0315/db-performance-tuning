@@ -1,9 +1,9 @@
-# API Test Script for SQL Tuning Demo
+# SQL チューニングデモ - API テストスクリプト
 Write-Host "`n================================================"
 Write-Host "  SQL Tuning Demo - API Test Suite"
 Write-Host "================================================`n"
 
-# 1. Test Auth Test Endpoint
+# 1. 認証テストエンドポイントのテスト
 Write-Host "[ 1 ] Testing /api/auth/test endpoint..."
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:8080/api/auth/test" -Method GET
@@ -13,7 +13,7 @@ try {
     exit 1
 }
 
-# 2. Test Login
+# 2. ログインのテスト
 Write-Host "[ 2 ] Testing Login (demo/password)..."
 $headers = @{"Content-Type"="application/json"}
 $body = '{"username":"demo","password":"password"}'
@@ -32,7 +32,7 @@ try {
     exit 1
 }
 
-# 3. Test Actor Endpoints
+# 3. 俳優エンドポイントのテスト
 Write-Host "[ 3 ] Testing /api/actors endpoint..."
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:8080/api/actors?page=1&size=5" -Method GET -Headers $global:authHeaders
@@ -44,7 +44,7 @@ try {
     Write-Host "  ✗ Failed: $($_.Exception.Message)`n" -ForegroundColor Red
 }
 
-# 4. Test Film Endpoints
+# 4. 映画エンドポイントのテスト
 Write-Host "[ 4 ] Testing /api/films endpoint..."
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:8080/api/films?page=1&size=5" -Method GET -Headers $global:authHeaders
@@ -56,7 +56,7 @@ try {
     Write-Host "  ✗ Failed: $($_.Exception.Message)`n" -ForegroundColor Red
 }
 
-# 5. Test Customer Endpoints
+# 5. 顧客エンドポイントのテスト
 Write-Host "[ 5 ] Testing /api/customers/fast endpoint..."
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:8080/api/customers/fast" -Method GET -Headers $global:authHeaders
