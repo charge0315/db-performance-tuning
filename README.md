@@ -131,28 +131,50 @@ mysql> USE sakila;
 mysql> SHOW TABLES;
 mysql> SELECT COUNT(*) FROM film;  -- 1000件のデータがあることを確認
 mysql> SELECT COUNT(*) FROM actor; -- 200件のデータがあることを確認
+mysql> SELECT COUNT(*) FROM customer; -- 3件のテストデータがあることを確認
+mysql> SELECT * FROM users; -- demo, admin, user アカウントを確認
 mysql> exit
 ```
 
 ### 4. バックエンド（Spring Boot）の起動
 
-```bash
+```powershell
 # backendディレクトリに移動
 cd backend
 
-# Mavenでビルドと起動
-mvn clean install
-mvn spring-boot:run
+# Mavenでビルド（テストをスキップ）
+mvn clean package -DskipTests
 
-# または、JARファイルを生成して実行
-mvn clean package
-java -jar target/sql-tuning-demo-1.0.0.jar
+# JARファイルを実行（PowerShellの場合）
+Start-Process -NoNewWindow powershell -ArgumentList "java -jar $PWD\target\sql-tuning-demo-1.0.0.jar"
+
+# または、Bashの場合
+# java -jar target/sql-tuning-demo-1.0.0.jar
 ```
 
 **確認:** ブラウザで `http://localhost:8080/api/auth/test` にアクセスして、
 「認証APIは正常に動作しています」と表示されることを確認。
 
-### 5. フロントエンド（React）の起動
+### 5. APIテストスクリプトの実行（オプション）
+
+プロジェクトルートに戻り、PowerShellでAPIテストスクリプトを実行できます：
+
+```powershell
+# プロジェクトルートに戻る
+cd ..
+
+# テストスクリプトを実行
+.\test-apis.ps1
+```
+
+このスクリプトは以下をテストします：
+- 認証テストエンドポイント
+- ログイン機能（demo/passwordで認証）
+- 俳優エンドポイント（ページネーション付き）
+- 映画エンドポイント（ページネーション付き）
+- 顧客エンドポイント（最適化版）
+
+### 6. フロントエンド（React）の起動
 
 別のターミナルウィンドウで：
 
@@ -169,6 +191,8 @@ npm start
 
 **確認:** ブラウザが自動的に開き、`http://localhost:3000` でログイン画面が表示されます。
 
+**注意:** バックエンドが先に起動している必要があります。
+
 ---
 
 ## 🎮 使い方
@@ -177,13 +201,24 @@ npm start
 
 デモ用のアカウントでログインします：
 
+**一般ユーザー:**
 - **ユーザー名:** `demo`
 - **パスワード:** `password`
 
-または
-
+**管理者:**
 - **ユーザー名:** `admin`
 - **パスワード:** `password`
+
+**その他のユーザー:**
+- **ユーザー名:** `user`
+- **パスワード:** `password`
+
+### JWT認証について
+
+このアプリケーションはJWT（JSON Web Token）認証を使用しています：
+- ログイン成功後、JWTトークンが発行されます
+- トークンの有効期限は24時間です
+- 保護されたエンドポイントには`Authorization: Bearer <token>`ヘッダーが必要です
 
 ### デモの実行
 
@@ -384,7 +419,14 @@ docker-compose logs mysql
 
 # コンテナを再起動
 docker-compose restart mysql
+
+# MySQLが起動していることを確認
+docker exec -it sql-tuning-mysql mysqladmin ping -ppassword
 ```
+
+**エラー:** `docker: command not found`
+- Docker Desktopがインストールされているか確認してください
+- Windowsの場合、Docker Desktopを起動してから操作してください
 
 ### Spring Bootが起動しない
 
@@ -393,9 +435,17 @@ docker-compose restart mysql
 **解決方法:** MySQLが完全に起動するまで待ってから、Spring Bootを起動してください。
 
 ```bash
-# MySQLが起動していることを確認
+# MySQLが起動していることを確認（数秒待つ）
 docker exec -it sql-tuning-mysql mysqladmin ping -ppassword
 ```
+
+**エラー:** `Circular dependencies between beans`
+
+**解決方法:** これは既に解決済みです。`PasswordEncoderConfig.java`が正しく配置されているか確認してください。
+
+**エラー:** `WeakKeyException: The specified key byte array is ... bits`
+
+**解決方法:** これは既に解決済みです。`application.yml`のJWT secret keyが512ビット以上であることを確認してください。
 
 ### フロントエンドでAPI接続エラー
 
@@ -419,9 +469,26 @@ SELECT * FROM sakila.users;
 **解決:** 初期データが投入されていない場合、手動でユーザーを作成：
 
 ```sql
+-- BCryptハッシュ化されたパスワード "password" でユーザーを作成
 INSERT INTO sakila.users (username, password, role) VALUES
-('demo', '$2a$10$xCqWMw7IHqXaJJe5Y9Xz4.zJPLzJj5d7jR8D3k9cQN6J6k7g8h9i0', 'USER');
+('demo', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'USER'),
+('admin', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'ADMIN'),
+('user', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'USER');
 ```
+
+**注意:** PowerShellでBCryptハッシュを扱う際は、`$`記号がエスケープされないように注意してください。
+文字列は必ずシングルクォート`'`で囲んでください。
+
+### APIテストで401 Unauthorizedエラーが出る
+
+**問題:** `/api/actors`や`/api/films`へのアクセスで401エラーが発生する
+
+**原因:** これらのエンドポイントはJWT認証が必要です。
+
+**解決方法:**
+1. まず`/api/auth/login`でログインしてJWTトークンを取得
+2. 取得したトークンを`Authorization: Bearer <token>`ヘッダーに設定
+3. `test-apis.ps1`スクリプトを使用すると自動的に処理されます
 
 ---
 
@@ -473,9 +540,22 @@ INSERT INTO sakila.users (username, password, role) VALUES
 - `film` - 映画（1000件）
 - `actor` - 俳優（200件）
 - `film_actor` - 映画と俳優の関連
-- `customer` - 顧客（599件）
+- `customer` - 顧客（初期3件、拡張可能）
 - `language` - 言語
-- `users` - ログインユーザー
+- `users` - ログインユーザー（demo, admin, user）
+
+### プロジェクト構成の補足
+
+```
+test-apis.ps1                        # APIテストスクリプト（PowerShell）
+backend/src/main/java/com/example/sqltuning/
+    config/
+        PasswordEncoderConfig.java   # BCryptエンコーダー設定（循環依存回避）
+        SecurityConfig.java          # Spring Security + JWT設定
+    security/
+        JwtAuthenticationFilter.java # JWTトークン検証フィルター
+        JwtTokenProvider.java        # JWTトークン生成・検証
+```
 
 ---
 
