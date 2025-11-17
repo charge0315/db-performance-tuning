@@ -14,8 +14,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 SELECT COUNT(*) AS 'Before: Film count' FROM film;
 
 -- 洋画のタイトルパターン用のテーブル作成
-DROP TEMPORARY TABLE IF EXISTS title_patterns;
-CREATE TEMPORARY TABLE title_patterns (
+DROP TABLE IF EXISTS title_patterns;
+CREATE TABLE title_patterns (
     pattern_id INT AUTO_INCREMENT PRIMARY KEY,
     prefix VARCHAR(50),
     suffix VARCHAR(50)
@@ -167,6 +167,9 @@ WHERE fa.film_id <= @original_max_film_id
 
 -- 外部キー制約を再有効化
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- パターンテーブルを削除
+DROP TABLE IF EXISTS title_patterns;
 
 -- 結果を確認
 SELECT COUNT(*) AS 'After: Film count' FROM film;
