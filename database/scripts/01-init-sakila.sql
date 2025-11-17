@@ -155,7 +155,7 @@ CREATE PROCEDURE generate_film_actors()
 BEGIN
   DECLARE i INT DEFAULT 1;
   DECLARE j INT;
-  WHILE i <= 1000 DO
+  outer_loop: WHILE i <= 1000 DO
     SET j = 0;
     WHILE j < 5 DO
       INSERT IGNORE INTO film_actor (actor_id, film_id)
@@ -163,7 +163,7 @@ BEGIN
       SET j = j + 1;
       SET i = i + 1;
       IF i > 1000 THEN
-        LEAVE;
+        LEAVE outer_loop;
       END IF;
     END WHILE;
   END WHILE;
