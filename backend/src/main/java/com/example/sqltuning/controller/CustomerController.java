@@ -1,5 +1,6 @@
 package com.example.sqltuning.controller;
 
+import com.example.sqltuning.dto.CustomerResponse;
 import com.example.sqltuning.entity.Customer;
 import com.example.sqltuning.service.CustomerService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ public class CustomerController {
      * 全顧客を取得（遅いバージョン - 過度なJOIN）
      */
     @GetMapping("/slow")
-    public ResponseEntity<List<Customer>> getAllCustomersSlow() {
+    public ResponseEntity<CustomerResponse> getAllCustomersSlow() {
         return ResponseEntity.ok(customerService.getAllCustomersSlow());
     }
 
@@ -28,7 +29,7 @@ public class CustomerController {
      * 全顧客を取得（速いバージョン - 最適化済み）
      */
     @GetMapping("/fast")
-    public ResponseEntity<List<Customer>> getAllCustomersFast() {
+    public ResponseEntity<CustomerResponse> getAllCustomersFast() {
         return ResponseEntity.ok(customerService.getAllCustomersFast());
     }
 

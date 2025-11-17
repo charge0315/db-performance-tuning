@@ -10,6 +10,7 @@ function Dashboard({ onLogout }) {
   const [loading, setLoading] = useState(false);
   const [executionTime, setExecutionTime] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [executedSql, setExecutedSql] = useState('');
 
   const username = localStorage.getItem('username');
 
@@ -21,10 +22,19 @@ function Dashboard({ onLogout }) {
       const endTime = performance.now();
       const time = (endTime - startTime).toFixed(2);
       setExecutionTime(time);
-      return response.data;
+      
+      // レスポンスにSQLが含まれている場合は設定
+      if (response.data.executedSql) {
+        setExecutedSql(response.data.executedSql);
+        return response.data.films || response.data.actors || response.data.customers || [];
+      } else {
+        setExecutedSql('');
+        return response.data;
+      }
     } catch (error) {
       console.error('API Error:', error);
       alert('データの取得に失敗しました');
+      setExecutedSql('');
       return [];
     } finally {
       setLoading(false);
@@ -222,6 +232,13 @@ function Dashboard({ onLogout }) {
           {executionTime && (
             <div className="execution-time">
               実行時間: <strong>{executionTime}ms</strong>
+            </div>
+          )}
+
+          {executedSql && (
+            <div className="sql-display">
+              <h3>実行されたSQL:</h3>
+              <pre>{executedSql}</pre>
             </div>
           )}
         </div>

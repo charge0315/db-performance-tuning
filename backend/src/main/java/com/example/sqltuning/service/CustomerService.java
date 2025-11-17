@@ -1,5 +1,6 @@
 package com.example.sqltuning.service;
 
+import com.example.sqltuning.dto.CustomerResponse;
 import com.example.sqltuning.entity.Customer;
 import com.example.sqltuning.mapper.CustomerMapper;
 import lombok.RequiredArgsConstructor;
@@ -15,22 +16,41 @@ public class CustomerService {
 
     private final CustomerMapper customerMapper;
 
-    public List<Customer> getAllCustomersSlow() {
+    public CustomerResponse getAllCustomersSlow() {
+        String sql = 
+            "SELECT customer_id, first_name, last_name, email,\n" +
+            "       active, create_date, last_update\n" +
+            "FROM customer\n" +
+            "ORDER BY customer_id\n" +
+            "LIMIT 100";
+        
         long startTime = System.currentTimeMillis();
         List<Customer> customers = customerMapper.findAllCustomersSlow();
         long endTime = System.currentTimeMillis();
+        long executionTime = endTime - startTime;
+        
         log.info("getAllCustomersSlow実行時間: {}ms, 取得件数: {}",
-                (endTime - startTime), customers.size());
-        return customers;
+                executionTime, customers.size());
+        return new CustomerResponse(customers, sql, executionTime);
     }
 
-    public List<Customer> getAllCustomersFast() {
+    public CustomerResponse getAllCustomersFast() {
+        String sql = 
+            "SELECT customer_id, first_name, last_name, email,\n" +
+            "       active, create_date, last_update\n" +
+            "FROM customer\n" +
+            "WHERE active = 1\n" +
+            "ORDER BY customer_id\n" +
+            "LIMIT 100";
+        
         long startTime = System.currentTimeMillis();
         List<Customer> customers = customerMapper.findAllCustomersFast();
         long endTime = System.currentTimeMillis();
+        long executionTime = endTime - startTime;
+        
         log.info("getAllCustomersFast実行時間: {}ms, 取得件数: {}",
-                (endTime - startTime), customers.size());
-        return customers;
+                executionTime, customers.size());
+        return new CustomerResponse(customers, sql, executionTime);
     }
 
     public Customer getCustomerByEmail(String email) {

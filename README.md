@@ -104,7 +104,37 @@ git clone <repository-url>
 cd db-performance-tuning
 ```
 
-### 2. MySQLデータベースの起動（Docker）
+### 2. 簡単起動（PowerShellスクリプト）
+
+**Windowsユーザー向け：**
+
+プロジェクトルートに用意されたPowerShellスクリプトで簡単に起動できます：
+
+```powershell
+# すべて起動（Docker + バックエンド + フロントエンド）
+.\start-all.ps1
+
+# すべて停止
+.\stop-all.ps1
+
+# バックエンドのみ再起動
+.\restart-backend.ps1
+```
+
+`start-all.ps1`は以下を自動で実行します：
+1. MySQLコンテナの起動と起動確認
+2. バックエンド（Spring Boot）のビルドと起動
+3. フロントエンド（React）の起動
+4. 各サービスの起動確認
+
+起動完了後、以下のURLでアクセスできます：
+- **フロントエンド**: http://localhost:3000
+- **バックエンドAPI**: http://localhost:8080/api
+- **MySQL**: localhost:3306
+
+### 3. 手動セットアップ（詳細手順）
+
+#### 3-1. MySQLデータベースの起動（Docker）
 
 ```bash
 # Docker Composeでデータベースを起動
@@ -120,7 +150,7 @@ docker ps
 **注意:** 初回起動時は、Sakilaデータベースの初期化に数分かかる場合があります。
 `database/scripts/` 内のSQLスクリプトが自動的に実行されます。
 
-### 3. データベース接続の確認
+#### 3-2. データベース接続の確認
 
 ```bash
 # MySQLコンテナに接続
@@ -136,7 +166,7 @@ mysql> SELECT * FROM users; -- demo, admin, user アカウントを確認
 mysql> exit
 ```
 
-### 4. バックエンド（Spring Boot）の起動
+#### 3-3. バックエンド（Spring Boot）の起動
 
 ```powershell
 # backendディレクトリに移動
@@ -155,7 +185,7 @@ Start-Process -NoNewWindow powershell -ArgumentList "java -jar $PWD\target\sql-t
 **確認:** ブラウザで `http://localhost:8080/api/auth/test` にアクセスして、
 「認証APIは正常に動作しています」と表示されることを確認。
 
-### 5. APIテストスクリプトの実行（オプション）
+#### 3-4. APIテストスクリプトの実行（オプション）
 
 プロジェクトルートに戻り、PowerShellでAPIテストスクリプトを実行できます：
 
@@ -174,7 +204,7 @@ cd ..
 - 映画エンドポイント（ページネーション付き）
 - 顧客エンドポイント（最適化版）
 
-### 6. フロントエンド（React）の起動
+#### 3-5. フロントエンド（React）の起動
 
 別のターミナルウィンドウで：
 
@@ -192,6 +222,37 @@ npm start
 **確認:** ブラウザが自動的に開き、`http://localhost:3000` でログイン画面が表示されます。
 
 **注意:** バックエンドが先に起動している必要があります。
+
+---
+
+## 🔧 管理スクリプト
+
+プロジェクトには以下の管理用スクリプトが含まれています：
+
+### PowerShellスクリプト（Windows）
+
+| スクリプト | 説明 |
+|-----------|------|
+| `start-all.ps1` | Docker、バックエンド、フロントエンドをすべて起動 |
+| `stop-all.ps1` | すべてのサービスを停止 |
+| `restart-backend.ps1` | バックエンドのみ再起動 |
+| `test-apis.ps1` | 全APIエンドポイントをテスト |
+
+**使用例:**
+
+```powershell
+# フルスタック起動
+.\start-all.ps1
+
+# バックエンドのコード変更後
+.\restart-backend.ps1
+
+# APIの動作確認
+.\test-apis.ps1
+
+# 終了時
+.\stop-all.ps1
+```
 
 ---
 

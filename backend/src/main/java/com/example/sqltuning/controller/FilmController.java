@@ -1,5 +1,6 @@
 package com.example.sqltuning.controller;
 
+import com.example.sqltuning.dto.FilmResponse;
 import com.example.sqltuning.entity.Film;
 import com.example.sqltuning.service.FilmService;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ public class FilmController {
      * タイトルで検索（遅いバージョン - インデックス未使用）
      */
     @GetMapping("/search/slow")
-    public ResponseEntity<List<Film>> searchFilmsSlow(@RequestParam String title) {
+    public ResponseEntity<FilmResponse> searchFilmsSlow(@RequestParam String title) {
         return ResponseEntity.ok(filmService.searchFilmsByTitleSlow(title));
     }
 
@@ -36,7 +37,7 @@ public class FilmController {
      * タイトルで検索（速いバージョン - インデックス使用）
      */
     @GetMapping("/search/fast")
-    public ResponseEntity<List<Film>> searchFilmsFast(@RequestParam String title) {
+    public ResponseEntity<FilmResponse> searchFilmsFast(@RequestParam String title) {
         return ResponseEntity.ok(filmService.searchFilmsByTitleFast(title));
     }
 
@@ -44,7 +45,7 @@ public class FilmController {
      * 言語情報付き映画取得（遅いバージョン - N+1問題）
      */
     @GetMapping("/with-language/slow")
-    public ResponseEntity<List<Film>> getFilmsWithLanguageSlow() {
+    public ResponseEntity<FilmResponse> getFilmsWithLanguageSlow() {
         return ResponseEntity.ok(filmService.getFilmsWithLanguageSlow());
     }
 
@@ -52,7 +53,7 @@ public class FilmController {
      * 言語情報付き映画取得（速いバージョン - JOIN使用）
      */
     @GetMapping("/with-language/fast")
-    public ResponseEntity<List<Film>> getFilmsWithLanguageFast() {
+    public ResponseEntity<FilmResponse> getFilmsWithLanguageFast() {
         return ResponseEntity.ok(filmService.getFilmsWithLanguageFast());
     }
 
@@ -60,7 +61,7 @@ public class FilmController {
      * 複雑な条件での検索（遅いバージョン - サブクエリ多用）
      */
     @GetMapping("/complex/slow")
-    public ResponseEntity<List<Film>> getFilmsComplexSlow(@RequestParam(defaultValue = "90") Integer minLength) {
+    public ResponseEntity<FilmResponse> getFilmsComplexSlow(@RequestParam(defaultValue = "90") Integer minLength) {
         return ResponseEntity.ok(filmService.getFilmsComplexSlow(minLength));
     }
 
@@ -68,7 +69,7 @@ public class FilmController {
      * 複雑な条件での検索（速いバージョン - 最適化済み）
      */
     @GetMapping("/complex/fast")
-    public ResponseEntity<List<Film>> getFilmsComplexFast(@RequestParam(defaultValue = "90") Integer minLength) {
+    public ResponseEntity<FilmResponse> getFilmsComplexFast(@RequestParam(defaultValue = "90") Integer minLength) {
         return ResponseEntity.ok(filmService.getFilmsComplexFast(minLength));
     }
 
