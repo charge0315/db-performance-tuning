@@ -14,11 +14,20 @@ SET FOREIGN_KEY_CHECKS = 0;
 SELECT COUNT(*) AS 'Before: Actor count' FROM actor;
 
 -- actor_idをINT型に変更（SMALLINT上限65535対策）
+-- 外部キー制約を削除してから変更
+ALTER TABLE film_actor DROP FOREIGN KEY fk_film_actor_actor;
+
 ALTER TABLE film_actor 
   MODIFY COLUMN actor_id INT UNSIGNED NOT NULL;
 
 ALTER TABLE actor 
   MODIFY COLUMN actor_id INT UNSIGNED NOT NULL AUTO_INCREMENT;
+
+-- 外部キー制約を再作成
+ALTER TABLE film_actor 
+  ADD CONSTRAINT fk_film_actor_actor 
+  FOREIGN KEY (actor_id) REFERENCES actor (actor_id) 
+  ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- 実在の俳優のファーストネーム
 DROP TABLE IF EXISTS actor_first_names;

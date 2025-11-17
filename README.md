@@ -387,6 +387,84 @@ mybatis:
 
 ---
 
+## 📈 大規模データによるパフォーマンステスト
+
+### データベースの拡張
+
+プロジェクトには、大規模データでのパフォーマンステストを行うためのSQLスクリプトが含まれています。
+
+#### データ拡張スクリプト
+
+| スクリプト | 説明 | 実行前 | 実行後 |
+|-----------|------|--------|--------|
+| `04-increase-film-data.sql` | 実在の洋画タイトルをモデルにFilmデータを生成 | 1,000件 | 100,000件 |
+| `05-expand-film-id-type.sql` | film_idをSMALLINTからINTに拡張 | - | 最大42億件対応 |
+| `07-increase-actor-data.sql` | 実在の俳優名をモデルにActorデータを生成 | 200件 | 20,000件 |
+| `08-increase-customer-data.sql` | 実在の人物名をモデルにCustomerデータを生成 | 3件 | 300件 |
+
+#### 実行方法
+
+```powershell
+# Film データを100倍に増やす（実在の洋画タイトルを使用）
+docker cp .\database\scripts\04-increase-film-data.sql sql-tuning-mysql:/tmp/
+docker exec sql-tuning-mysql mysql -uroot -ppassword sakila -e "source /tmp/04-increase-film-data.sql"
+
+# Actor データを100倍に増やす（Tom Cruise, Brad Pittなど実在の俳優名を使用）
+docker cp .\database\scripts\07-increase-actor-data.sql sql-tuning-mysql:/tmp/
+docker exec sql-tuning-mysql mysql -uroot -ppassword sakila -e "source /tmp/07-increase-actor-data.sql"
+
+# Customer データを100倍に増やす（一般的な英語圏の姓名を使用）
+docker cp .\database\scripts\08-increase-customer-data.sql sql-tuning-mysql:/tmp/
+docker exec sql-tuning-mysql mysql -uroot -ppassword sakila -e "source /tmp/08-increase-customer-data.sql"
+
+# インデックスの最適化（データ増加後に推奨）
+docker exec sql-tuning-mysql mysql -uroot -ppassword sakila -e "OPTIMIZE TABLE film; OPTIMIZE TABLE actor; OPTIMIZE TABLE customer; ANALYZE TABLE film; ANALYZE TABLE actor; ANALYZE TABLE customer;"
+```
+
+#### 生成されるデータの特徴
+
+**Filmテーブル（100,000件）:**
+- タイトル: "The Last Warrior Part 1", "Dark Knight Returns" など実在の洋画風
+- 公開年: 1980-2024年でランダム化
+- 上映時間: 80-180分でランダム化
+- レンタル料: $0.99-$6.99でランダム化
+- レーティング: G, PG, PG-13, R, NC-17でランダム化
+
+**Actorテーブル（20,000件）:**
+- 実在の俳優名60名をベース:
+  - Tom Cruise, Brad Pitt, Leonardo DiCaprio
+  - Scarlett Johansson, Jennifer Lawrence
+  - など
+- film_actorリレーションも自動生成（各俳優にランダムで5本の映画を割り当て）
+
+**Customerテーブル（300件）:**
+- 一般的な英語圏の姓名（First Name 100種類、Last Name 100種類）
+- メールアドレスをランダム生成（gmail.com, yahoo.com等）
+- 作成日を過去10年間でランダム化
+- Active/Inactiveを95%/5%で分散
+
+#### パフォーマンステストのポイント
+
+大規模データを使用することで、以下のようなリアルな性能差を体験できます：
+
+1. **インデックスの重要性**
+   - 1,000件: 数ミリ秒の差
+   - 100,000件: 数十倍～数百倍の差
+
+2. **JOINの最適化**
+   - N+1問題がより顕著に
+   - 適切なJOINの重要性が明確に
+
+3. **サブクエリの最適化**
+   - 相関サブクエリの性能劣化が顕著に
+   - JOINへの書き換え効果が大きく
+
+4. **ページネーションの必要性**
+   - 全件取得のコスト増大
+   - LIMIT句の重要性
+
+---
+
 ## 🔍 パフォーマンス分析
 
 ### 1. アプリケーションログの確認

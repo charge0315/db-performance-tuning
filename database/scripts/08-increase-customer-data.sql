@@ -104,17 +104,14 @@ BEGIN
     WHILE i <= 99 DO
         -- 元のcustomerデータから複製し、名前とメールをランダムに変更
         INSERT INTO customer (
-            store_id,
             first_name,
             last_name,
             email,
-            address_id,
             active,
             create_date,
             last_update
         )
         SELECT 
-            CASE WHEN RAND() < 0.5 THEN 1 ELSE 2 END AS store_id,
             (SELECT name FROM customer_first_names ORDER BY RAND() LIMIT 1) AS first_name,
             (SELECT name FROM customer_last_names ORDER BY RAND() LIMIT 1) AS last_name,
             LOWER(CONCAT(
@@ -125,10 +122,6 @@ BEGIN
                 '@',
                 (SELECT domain FROM email_domains ORDER BY RAND() LIMIT 1)
             )) AS email,
-            CASE 
-                WHEN RAND() < 0.7 THEN address_id 
-                ELSE 1 + FLOOR(RAND() * 603)
-            END AS address_id,
             CASE WHEN RAND() < 0.95 THEN 1 ELSE 0 END AS active,
             DATE_SUB(NOW(), INTERVAL FLOOR(RAND() * 3650) DAY) AS create_date,
             NOW() AS last_update
