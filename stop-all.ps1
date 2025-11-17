@@ -1,4 +1,4 @@
-# SQLチューニングデモアプリケーション停止スクリプト
+﻿# SQLチューニングデモアプリケーション停止スクリプト
 
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host "SQLチューニングデモ停止中..." -ForegroundColor Cyan

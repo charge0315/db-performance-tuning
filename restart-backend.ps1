@@ -1,4 +1,4 @@
-# バックエンド再起動スクリプト
+﻿# バックエンド再起動スクリプト
 
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host "バックエンド再起動中..." -ForegroundColor Cyan

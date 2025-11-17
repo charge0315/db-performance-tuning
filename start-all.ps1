@@ -1,4 +1,4 @@
-# SQLチューニングデモアプリケーション起動スクリプト
+﻿# SQLチューニングデモアプリケーション起動スクリプト
 
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host "SQLチューニングデモ起動中..." -ForegroundColor Cyan
