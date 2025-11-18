@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -14,4 +15,5 @@ public class FilmResponse {
     private List<Film> films;
     private String executedSql;
     private Long executionTimeMs;
+    private List<Map<String, Object>> executionPlan;
 }

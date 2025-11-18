@@ -57,6 +57,10 @@ export const filmAPI = {
 
   getFilmsComplexSlow: (minLength) => api.get('/films/complex/slow', { params: { minLength } }),
   getFilmsComplexFast: (minLength) => api.get('/films/complex/fast', { params: { minLength } }),
+
+  // インデックス管理API
+  createTitleIndex: () => api.post('/films/index/title/create'),
+  dropTitleIndex: () => api.delete('/films/index/title/delete'),
 };
 
 // 俳優API

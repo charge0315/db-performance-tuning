@@ -84,4 +84,22 @@ public class FilmController {
         }
         return ResponseEntity.ok(film);
     }
+
+    /**
+     * タイトルカラムにインデックスを作成
+     */
+    @PostMapping("/index/title/create")
+    public ResponseEntity<String> createTitleIndex() {
+        filmService.createTitleIndex();
+        return ResponseEntity.ok("インデックスを作成しました");
+    }
+
+    /**
+     * タイトルカラムのインデックスを削除
+     */
+    @DeleteMapping("/index/title/delete")
+    public ResponseEntity<String> dropTitleIndex() {
+        filmService.dropTitleIndex();
+        return ResponseEntity.ok("インデックスを削除しました");
+    }
 }

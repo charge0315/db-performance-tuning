@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface FilmMapper {
@@ -49,4 +50,24 @@ public interface FilmMapper {
      * IDで映画を取得
      */
     Film findFilmById(@Param("filmId") Integer filmId);
+    
+    /**
+     * SQLの実行計画を取得
+     */
+    List<Map<String, Object>> explainQuery(@Param("query") String query);
+    
+    /**
+     * filmテーブルのtitleカラムにインデックスを作成
+     */
+    void createTitleIndex();
+    
+    /**
+     * filmテーブルのtitleカラムのインデックスを削除
+     */
+    void dropTitleIndex();
+    
+    /**
+     * language_idで言語名を取得（N+1問題用）
+     */
+    String findLanguageNameById(@Param("languageId") Integer languageId);
 }

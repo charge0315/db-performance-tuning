@@ -147,4 +147,26 @@
         WHERE f.film_id = #{filmId}
     </select>
 
+    <!-- EXPLAIN: SQLの実行計画を取得 -->
+    <select id="explainQuery" resultType="java.util.HashMap">
+        EXPLAIN ${query}
+    </select>
+
+    <!-- filmテーブルのtitleカラムにインデックスを作成 -->
+    <update id="createTitleIndex">
+        CREATE INDEX idx_film_title ON film(title)
+    </update>
+
+    <!-- filmテーブルのtitleカラムのインデックスを削除 -->
+    <update id="dropTitleIndex">
+        DROP INDEX idx_film_title ON film
+    </update>
+
+    <!-- language_idで言語名を取得（N+1問題用） -->
+    <select id="findLanguageNameById" resultType="java.lang.String">
+        SELECT name
+        FROM language
+        WHERE language_id = #{languageId}
+    </select>
+
 </mapper>

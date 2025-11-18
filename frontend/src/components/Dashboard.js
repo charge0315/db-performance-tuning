@@ -11,6 +11,7 @@ function Dashboard({ onLogout }) {
   const [executionTime, setExecutionTime] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [executedSql, setExecutedSql] = useState('');
+  const [executionPlan, setExecutionPlan] = useState([]);
 
   const username = localStorage.getItem('username');
 
@@ -26,15 +27,18 @@ function Dashboard({ onLogout }) {
       // レスポンスにSQLが含まれている場合は設定
       if (response.data.executedSql) {
         setExecutedSql(response.data.executedSql);
+        setExecutionPlan(response.data.executionPlan || []);
         return response.data.films || response.data.actors || response.data.customers || [];
       } else {
         setExecutedSql('');
+        setExecutionPlan([]);
         return response.data;
       }
     } catch (error) {
       console.error('API Error:', error);
       alert('データの取得に失敗しました');
       setExecutedSql('');
+      setExecutionPlan([]);
       return [];
     } finally {
       setLoading(false);
@@ -111,6 +115,176 @@ function Dashboard({ onLogout }) {
     setCustomers(data);
   };
 
+  // インデックス管理ハンドラー
+  const handleCreateTitleIndex = async () => {
+    setLoading(true);
+    try {
+      await filmAPI.createTitleIndex();
+      alert('インデックスを作成しました');
+    } catch (error) {
+      console.error('Index creation error:', error);
+      alert('インデックスの作成に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDropTitleIndex = async () => {
+    setLoading(true);
+    try {
+      await filmAPI.dropTitleIndex();
+      alert('インデックスを削除しました');
+    } catch (error) {
+      console.error('Index deletion error:', error);
+      alert('インデックスの削除に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // SQLシンタックスハイライト関数
+  const highlightSQL = (sql) => {
+    const keywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'INNER', 'LEFT', 'RIGHT', 'OUTER', 
+                      'ON', 'AND', 'OR', 'ORDER', 'BY', 'GROUP', 'HAVING', 'LIMIT', 
+                      'AS', 'DISTINCT', 'COUNT', 'SUM', 'AVG', 'MAX', 'MIN', 'LIKE',
+                      'IN', 'EXISTS', 'BETWEEN', 'IS', 'NULL', 'NOT', 'CASE', 'WHEN',
+                      'THEN', 'ELSE', 'END', 'INSERT', 'UPDATE', 'DELETE', 'CREATE',
+                      'ALTER', 'DROP', 'TABLE', 'INDEX', 'VIEW'];
+    
+    let highlighted = sql;
+    
+    // キーワードをハイライト
+    keywords.forEach(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+      highlighted = highlighted.replace(regex, `<span class="sql-keyword">${keyword}</span>`);
+    });
+    
+    // 文字列リテラルをハイライト
+    highlighted = highlighted.replace(/'([^']*)'/g, '<span class="sql-string">\'$1\'</span>');
+    
+    // 数値をハイライト
+    highlighted = highlighted.replace(/\b(\d+)\b/g, '<span class="sql-number">$1</span>');
+    
+    // コメントをハイライト
+    highlighted = highlighted.replace(/(--[^\n]*)/g, '<span class="sql-comment">$1</span>');
+    
+    return highlighted;
+  };
+
+  // Javaコードをシンタックスハイライト
+  const highlightJava = (code) => {
+    let highlighted = code;
+    
+    // HTMLエスケープ
+    highlighted = highlighted
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    
+    // 保護用のプレースホルダーを使用
+    const placeholders = [];
+    let placeholderIndex = 0;
+    
+    // コメントを保護
+    highlighted = highlighted.replace(/(\/\/[^\n]*)/g, (match) => {
+      const placeholder = `__COMMENT_${placeholderIndex}__`;
+      placeholders.push({ placeholder, value: `<span class="java-comment">${match}</span>` });
+      placeholderIndex++;
+      return placeholder;
+    });
+    
+    // キーワードをハイライト
+    const keywords = ['for', 'while', 'do', 'if', 'else', 'switch', 'case', 'break', 
+                      'continue', 'return', 'new', 'public', 'private', 'protected', 
+                      'static', 'final', 'void', 'interface', 'extends', 
+                      'implements', 'try', 'catch', 'finally', 'throw', 'throws', 
+                      'import', 'package'];
+    
+    keywords.forEach(keyword => {
+      const regex = new RegExp(`\\b(${keyword})\\b`, 'g');
+      highlighted = highlighted.replace(regex, `<span class="java-keyword">$1</span>`);
+    });
+    
+    // 型名をハイライト（List, String, Film等）
+    highlighted = highlighted.replace(/\b(List|String|Film|Integer|Boolean|Double|Float|Long|Char)\b/g, '<span class="java-type">$1</span>');
+    
+    // メソッド名をハイライト（ドットの後ろ）
+    highlighted = highlighted.replace(/\.([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, '.<span class="java-method">$1</span>(');
+    
+    // 変数名をハイライト（宣言時と代入時）
+    highlighted = highlighted.replace(/&lt;<span class="java-type">([^&]+)<\/span>&gt;\s+([a-z][a-zA-Z0-9_]*)\s+=/g, 
+      '&lt;<span class="java-type">$1</span>&gt; <span class="java-variable">$2</span> =');
+    highlighted = highlighted.replace(/<span class="java-type">([^<]+)<\/span>\s+([a-z][a-zA-Z0-9_]*)\s+=/g, 
+      '<span class="java-type">$1</span> <span class="java-variable">$2</span> =');
+    
+    // プレースホルダーを戻す
+    placeholders.forEach(({ placeholder, value }) => {
+      highlighted = highlighted.replace(placeholder, value);
+    });
+    
+    return highlighted;
+  };
+
+  // 実行計画をテキスト形式でフォーマット
+  const formatExecutionPlan = (plan) => {
+    if (!plan || plan.length === 0) return '';
+    
+    let output = '';
+    
+    plan.forEach((row, index) => {
+      output += `<span class="plan-row-header">Row ${index + 1}:</span>\n`;
+      output += '<span class="plan-separator">'.padEnd(60, '-') + '</span>\n';
+      
+      Object.entries(row).forEach(([key, value]) => {
+        const displayValue = value != null ? String(value) : 'NULL';
+        const paddedKey = key.padEnd(20);
+        
+        if (key === 'type') {
+          // typeカラムを色分け
+          if (value === 'ALL') {
+            output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-type-bad">${displayValue}</span>\n`;
+          } else if (value === 'index' || value === 'ref' || value === 'eq_ref') {
+            output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-type-good">${displayValue}</span>\n`;
+          } else {
+            output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-value">${displayValue}</span>\n`;
+          }
+        } else if (key === 'key') {
+          // 使用されたインデックスを強調
+          if (value) {
+            output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-index">${displayValue}</span>\n`;
+          } else {
+            output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-null">${displayValue}</span>\n`;
+          }
+        } else if (key === 'rows') {
+          // スキャン行数を色分け
+          const rowCount = parseInt(value);
+          if (rowCount > 10000) {
+            output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-rows-bad">${displayValue}</span>\n`;
+          } else if (rowCount > 1000) {
+            output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-rows-warn">${displayValue}</span>\n`;
+          } else {
+            output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-rows-good">${displayValue}</span>\n`;
+          }
+        } else if (key === 'Extra') {
+          // Extra情報を色分け
+          if (displayValue.includes('Using filesort') || displayValue.includes('Using temporary')) {
+            output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-extra-warn">${displayValue}</span>\n`;
+          } else if (displayValue.includes('Using index')) {
+            output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-extra-good">${displayValue}</span>\n`;
+          } else {
+            output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-value">${displayValue}</span>\n`;
+          }
+        } else {
+          output += `  <span class="plan-key">${paddedKey}</span>: <span class="plan-value">${displayValue}</span>\n`;
+        }
+      });
+      
+      output += '\n';
+    });
+    
+    return output;
+  };
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -160,7 +334,17 @@ function Dashboard({ onLogout }) {
                   全映画取得
                 </button>
                 <div className="comparison-group">
-                  <h3>デモ1: インデックスの重要性</h3>
+                  <div className="comparison-header">
+                    <h3>デモ1: インデックスの重要性</h3>
+                    <div className="index-controls">
+                      <button onClick={handleCreateTitleIndex} disabled={loading} className="index-create-button">
+                        インデックスを作成
+                      </button>
+                      <button onClick={handleDropTitleIndex} disabled={loading} className="index-drop-button">
+                        インデックスを削除
+                      </button>
+                    </div>
+                  </div>
                   <button onClick={handleSearchFilmsSlow} disabled={loading} className="slow-button">
                     タイトル検索（遅い - LIKE '%keyword%'）
                   </button>
@@ -170,6 +354,23 @@ function Dashboard({ onLogout }) {
                 </div>
                 <div className="comparison-group">
                   <h3>デモ2: JOINの最適化</h3>
+                  <div className="demo-explanation">
+                    <p><strong>N+1問題とは:</strong></p>
+                    <pre className="code-example">
+                      <code dangerouslySetInnerHTML={{
+                        __html: highlightJava(
+`// まずfilmデータを取得
+List<Film> films = filmMapper.findFilmsWithLanguageSlow();
+
+// N+1問題: 各filmに対してlanguage名を個別に取得
+for (Film film : films) {
+    String languageName = filmMapper.findLanguageNameById(film.getLanguageId());
+    film.setLanguageName(languageName);
+}`)
+                      }} />
+                    </pre>
+                    <p>100件のfilmに対して、1回の初期クエリ + 100回の個別クエリ = <strong>101回のDB問合せ</strong>が発生します。</p>
+                  </div>
                   <button onClick={handleFilmsWithLanguageSlow} disabled={loading} className="slow-button">
                     言語情報付き取得（遅い - N+1問題）
                   </button>
@@ -238,7 +439,18 @@ function Dashboard({ onLogout }) {
           {executedSql && (
             <div className="sql-display">
               <h3>実行されたSQL:</h3>
-              <pre>{executedSql}</pre>
+              <pre className="sql-code">
+                <code dangerouslySetInnerHTML={{ __html: highlightSQL(executedSql) }} />
+              </pre>
+            </div>
+          )}
+
+          {executionPlan && executionPlan.length > 0 && (
+            <div className="execution-plan">
+              <h3>実行計画 (EXPLAIN):</h3>
+              <pre className="explain-output">
+                <code dangerouslySetInnerHTML={{ __html: formatExecutionPlan(executionPlan) }} />
+              </pre>
             </div>
           )}
         </div>

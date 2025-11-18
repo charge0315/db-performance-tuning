@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -38,9 +39,18 @@ public class FilmService {
         long endTime = System.currentTimeMillis();
         long executionTime = endTime - startTime;
         
+        // 実行計画を取得
+        List<Map<String, Object>> executionPlan = filmMapper.explainQuery(sql);
+        
         log.info("searchFilmsByTitleSlow実行時間: {}ms, 検索語: {}, 取得件数: {}",
                 executionTime, title, films.size());
-        return new FilmResponse(films, sql, executionTime);
+        
+        FilmResponse response = new FilmResponse();
+        response.setFilms(films);
+        response.setExecutedSql(sql);
+        response.setExecutionTimeMs(executionTime);
+        response.setExecutionPlan(executionPlan);
+        return response;
     }
 
     public FilmResponse searchFilmsByTitleFast(String title) {
@@ -57,9 +67,40 @@ public class FilmService {
         long endTime = System.currentTimeMillis();
         long executionTime = endTime - startTime;
         
-        log.info("searchFilmsByTitleFast実行時間: {}ms, 検索語: {}, 取得件数: {}",
+        // 実行計画を取得
+        List<Map<String, Object>> executionPlan = filmMapper.explainQuery(sql);
+        
+        log.info("searchFilmsByTitleFast実行時間: {}ms, 検索語: {}, 取得件数: {},",
                 executionTime, title, films.size());
-        return new FilmResponse(films, sql, executionTime);
+        
+        FilmResponse response = new FilmResponse();
+        response.setFilms(films);
+        response.setExecutedSql(sql);
+        response.setExecutionTimeMs(executionTime);
+        response.setExecutionPlan(executionPlan);
+        return response;
+    }
+
+    public void createTitleIndex() {
+        try {
+            log.info("Creating index on film.title...");
+            filmMapper.createTitleIndex();
+            log.info("Index created successfully");
+        } catch (Exception e) {
+            log.error("Failed to create index: {}", e.getMessage());
+            throw new RuntimeException("インデックスの作成に失敗しました: " + e.getMessage());
+        }
+    }
+
+    public void dropTitleIndex() {
+        try {
+            log.info("Dropping index on film.title...");
+            filmMapper.dropTitleIndex();
+            log.info("Index dropped successfully");
+        } catch (Exception e) {
+            log.error("Failed to drop index: {}", e.getMessage());
+            throw new RuntimeException("インデックスの削除に失敗しました: " + e.getMessage());
+        }
     }
 
     public FilmResponse getFilmsWithLanguageSlow() {
@@ -71,13 +112,31 @@ public class FilmService {
             "LIMIT 100";
         
         long startTime = System.currentTimeMillis();
+        
+        // まずfilmデータを取得
         List<Film> films = filmMapper.findFilmsWithLanguageSlow();
+        
+        // N+1問題: 各filmに対してlanguage名を個別に取得
+        for (Film film : films) {
+            String languageName = filmMapper.findLanguageNameById(film.getLanguageId());
+            film.setLanguageName(languageName);
+        }
+        
         long endTime = System.currentTimeMillis();
         long executionTime = endTime - startTime;
         
-        log.info("getFilmsWithLanguageSlow実行時間: {}ms, 取得件数: {}",
-                executionTime, films.size());
-        return new FilmResponse(films, sql, executionTime);
+        // 実行計画を取得
+        List<Map<String, Object>> executionPlan = filmMapper.explainQuery(sql);
+        
+        log.info("getFilmsWithLanguageSlow実行時間: {}ms, 取得件数: {}, クエリ実行回数: {}回",
+                executionTime, films.size(), films.size() + 1);
+        
+        FilmResponse response = new FilmResponse();
+        response.setFilms(films);
+        response.setExecutedSql(sql);
+        response.setExecutionTimeMs(executionTime);
+        response.setExecutionPlan(executionPlan);
+        return response;
     }
 
     public FilmResponse getFilmsWithLanguageFast() {
@@ -95,9 +154,18 @@ public class FilmService {
         long endTime = System.currentTimeMillis();
         long executionTime = endTime - startTime;
         
-        log.info("getFilmsWithLanguageFast実行時間: {}ms, 取得件数: {}",
+        // 実行計画を取得
+        List<Map<String, Object>> executionPlan = filmMapper.explainQuery(sql);
+        
+        log.info("getFilmsWithLanguageFast実行時間: {}ms, 取得件数: {},",
                 executionTime, films.size());
-        return new FilmResponse(films, sql, executionTime);
+        
+        FilmResponse response = new FilmResponse();
+        response.setFilms(films);
+        response.setExecutedSql(sql);
+        response.setExecutionTimeMs(executionTime);
+        response.setExecutionPlan(executionPlan);
+        return response;
     }
 
     public FilmResponse getFilmsComplexSlow(Integer minLength) {
@@ -121,9 +189,18 @@ public class FilmService {
         long endTime = System.currentTimeMillis();
         long executionTime = endTime - startTime;
         
-        log.info("getFilmsComplexSlow実行時間: {}ms, 最小長: {}, 取得件数: {}",
+        // 実行計画を取得
+        List<Map<String, Object>> executionPlan = filmMapper.explainQuery(sql);
+        
+        log.info("getFilmsComplexSlow実行時間: {}ms, 最小長: {}, 取得件数: {},",
                 executionTime, minLength, films.size());
-        return new FilmResponse(films, sql, executionTime);
+        
+        FilmResponse response = new FilmResponse();
+        response.setFilms(films);
+        response.setExecutedSql(sql);
+        response.setExecutionTimeMs(executionTime);
+        response.setExecutionPlan(executionPlan);
+        return response;
     }
 
     public FilmResponse getFilmsComplexFast(Integer minLength) {
@@ -149,9 +226,18 @@ public class FilmService {
         long endTime = System.currentTimeMillis();
         long executionTime = endTime - startTime;
         
-        log.info("getFilmsComplexFast実行時間: {}ms, 最小長: {}, 取得件数: {}",
+        // 実行計画を取得
+        List<Map<String, Object>> executionPlan = filmMapper.explainQuery(sql);
+        
+        log.info("getFilmsComplexFast実行時間: {}ms, 最小長: {}, 取得件数: {},",
                 executionTime, minLength, films.size());
-        return new FilmResponse(films, sql, executionTime);
+        
+        FilmResponse response = new FilmResponse();
+        response.setFilms(films);
+        response.setExecutedSql(sql);
+        response.setExecutionTimeMs(executionTime);
+        response.setExecutionPlan(executionPlan);
+        return response;
     }
 
     public Film getFilmById(Integer filmId) {
