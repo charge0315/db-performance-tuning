@@ -36,7 +36,7 @@ server:
 # JWT設定
 jwt:
   secret: myVerySecureAndLongSecretKeyForJWTTokenGenerationAndValidation123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-  expiration: 86400000 # 24時間
+  expiration: 604800000 # 7日間
 
 # ログ設定
 logging:
