@@ -301,5 +301,5 @@ CREATE TABLE users (
 -- デモユーザーを作成（パスワード: password）
 -- BCrypt hash for "password"
 INSERT INTO users (username, password, role) VALUES
-('demo', '$2a$10$xCqWMw7IHqXaJJe5Y9Xz4.zJPLzJj5d7jR8D3k9cQN6J6k7g8h9i0', 'USER'),
-('admin', '$2a$10$xCqWMw7IHqXaJJe5Y9Xz4.zJPLzJj5d7jR8D3k9cQN6J6k7g8h9i0', 'ADMIN');
+('demo', '$2a$10$2twsqvaTB7ycn.dQLOO1WOi.nP601Svq.BOs9sZYaF611Zo9Q2TfO', 'USER'),
+('admin', '$2a$10$2twsqvaTB7ycn.dQLOO1WOi.nP601Svq.BOs9sZYaF611Zo9Q2TfO', 'ADMIN');
