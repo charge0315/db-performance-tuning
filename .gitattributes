@@ -1,0 +1,15 @@
+# デフォルトは自動変換
+* text=auto
+
+# シェルスクリプトは LF に固定（WSL2/Linux で実行するため）
+*.sh text eol=lf
+
+# PowerShell スクリプトは CRLF に固定（Windows で実行するため）
+*.ps1 text eol=crlf
+
+# SQL ファイルは LF に固定
+*.sql text eol=lf
+
+# YAML/設定ファイルは LF に固定
+*.yml text eol=lf
+*.yaml text eol=lf

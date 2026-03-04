@@ -7,7 +7,7 @@ Write-Host ""
 
 # 1. Dockerコンテナの起動
 Write-Host "[1/3] MySQLコンテナを起動しています..." -ForegroundColor Yellow
-docker-compose up -d
+wsl docker compose up -d
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "エラー: Dockerコンテナの起動に失敗しました" -ForegroundColor Red
@@ -24,7 +24,7 @@ while (-not $isReady -and $retryCount -lt $maxRetries) {
     $retryCount++
     Start-Sleep -Seconds 2
     
-    $result = docker exec sql-tuning-mysql mysqladmin ping -ppassword 2>$null
+    $result = wsl docker exec sql-tuning-mysql mysqladmin ping -ppassword 2>$null
     if ($result -like "*mysqld is alive*") {
         $isReady = $true
         Write-Host "MySQL起動完了！" -ForegroundColor Green

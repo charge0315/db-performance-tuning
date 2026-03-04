@@ -31,7 +31,7 @@ Write-Host ""
 
 # 3. Dockerコンテナを停止
 Write-Host "[3/3] MySQLコンテナを停止しています..." -ForegroundColor Yellow
-docker-compose down
+wsl docker compose down
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "MySQLコンテナを停止しました" -ForegroundColor Green
